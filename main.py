@@ -15,7 +15,7 @@ logger.remove()
 # Ajoute un handler pour la sortie console avec un format personnalisé
 logger.add(sys.stderr, format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
 # Ajoute un handler pour écrire les logs dans un fichier, avec rotation et compression
-logger.add("logs/file_{time}.log", rotation="5 MB", compression="zip", enqueue=True, serialize=False)
+logger.add("logs/api.log", rotation="5 MB", compression="zip", enqueue=True, serialize=False)
 
 # Crée les tables dans la base de données si elles n'existent pas
 models.Base.metadata.create_all(bind=engine)
@@ -40,17 +40,17 @@ async def log_requests(request: Request, call_next):
 
 # --- Routes de l'API avec logging ---
 
-@app.post("/{table_name}/", response_model=schema.Client, status_code=201, summary="Créer un enregistrement")
+@app.post("/{table_name}/", response_model=schema.ClientRequest, status_code=201, summary="Créer un enregistrement")
 def create_new_item(
         table_name: str,
-        request: schema.GenericRequest,
+        request: schema.Client,
         db: Session = Depends(get_db)
 ):
     """Crée un nouvel enregistrement dans la table spécifiée."""
     logger.info(f"Tentative de création d'un enregistrement dans la table '{table_name}'")
-    return crud.create_item(db=db, tablename=table_name, data=request.data)
+    return crud.create_item(db=db, tablename=table_name, data=request.__dict__)
 
-@app.get("/{table_name}/", response_model=List[schema.Client], summary="Lire plusieurs enregistrements")
+@app.get("/{table_name}/", response_model=List[schema.ClientRequest], summary="Lire plusieurs enregistrements")
 def read_all_items(
         table_name: str,
         skip: int = 0,
@@ -61,7 +61,7 @@ def read_all_items(
     logger.info(f"Lecture de la liste des enregistrements de la table '{table_name}' (skip={skip}, limit={limit})")
     return crud.get_items(db=db, tablename=table_name, skip=skip, limit=limit)
 
-@app.get("/{table_name}/{item_id}", response_model=schema.Client, summary="Lire un enregistrement par ID")
+@app.get("/{table_name}/{item_id}", response_model=schema.ClientRequest, summary="Lire un enregistrement par ID")
 def read_single_item(
         table_name: str,
         item_id: int,
@@ -71,16 +71,16 @@ def read_single_item(
     logger.info(f"Lecture de l'enregistrement ID {item_id} de la table '{table_name}'")
     return crud.get_item(db=db, tablename=table_name, item_id=item_id)
 
-@app.put("/{table_name}/{item_id}", response_model=schema.Client, summary="Mettre à jour un enregistrement")
+@app.put("/{table_name}/{item_id}", response_model=schema.ClientRequest, summary="Mettre à jour un enregistrement")
 def update_existing_item(
         table_name: str,
         item_id: int,
-        request: schema.GenericRequest,
+        request: schema.Client,
         db: Session = Depends(get_db)
 ):
     """Met à jour un enregistrement existant par son ID."""
     logger.info(f"Tentative de mise à jour de l'enregistrement ID {item_id} dans la table '{table_name}'")
-    return crud.update_item(db=db, tablename=table_name, item_id=item_id, data=request.data)
+    return crud.update_item(db=db, tablename=table_name, item_id=item_id, data=request.__dict__)
 
 @app.delete("/{table_name}/{item_id}", summary="Supprimer un enregistrement")
 def delete_existing_item(
