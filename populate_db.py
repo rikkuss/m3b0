@@ -4,7 +4,7 @@ from loguru import logger
 from datetime import datetime
 
 from database import SessionLocal, engine
-from models import Client, Base
+from models import Client, Base, ClientMeta, ClientSituation, Contrat
 
 # Chemin vers votre fichier CSV
 CSV_FILE_PATH = "dataset.csv"
@@ -31,33 +31,39 @@ def populate_database():
 
         for _, row in df.iterrows():
             # Crée une instance du modèle Client pour chaque ligne du CSV
-            client_data = Client(
+            client = Client(
                 nom=row['nom'],
                 prenom=row['prenom'],
-                age=row['age'],
-                taille=row['taille'],
-                poids=row['poids'],
-                sexe=row['sexe'],
-                # Conversion des 'oui'/'non' en booléens (True/False)
-                sport_licence=(row['sport_licence'] == 'oui'),
-                niveau_etude=row['niveau_etude'],
-                region=row['region'],
-                smoker=(row['smoker'] == 'oui'),
-                nationalite_francaise=(row['nationalité_francaise'] == 'oui'),
-                situation_familiale=row['situation_familiale'],
-                revenu_estime_mois=row['revenu_estime_mois'],
-                historique_credits=row['historique_credits'],
-                risque_personnel=row['risque_personnel'],
-                score_credit=row['score_credit'],
-                loyer_mensuel=row['loyer_mensuel'],
-                montant_pret=row['montant_pret'],
                 # Conversion de la chaîne de caractères en objet Date
-                date_creation_compte=datetime.strptime(row['date_creation_compte'], '%Y-%m-%d').date()
+                date_creation_compte=datetime.strptime(row['date_creation_compte'], '%Y-%m-%d').date(),
+                client_meta = ClientMeta(
+                    age=row['age'],
+                    taille=row['taille'],
+                    poids=row['poids'],
+                    sexe=row['sexe'],
+                    # Conversion des 'oui'/'non' en booléens (True/False)
+                    sport_licence=(row['sport_licence'] == 'oui'),
+                    niveau_etude=row['niveau_etude'],
+                    region=row['region'],
+                    smoker=(row['smoker'] == 'oui'),
+                    nationalite_francaise=(row['nationalité_francaise'] == 'oui'),
+                    situation_familiale=row['situation_familiale'],
+                ),
+                client_situation = ClientSituation(
+                    revenu_estime_mois=row['revenu_estime_mois'],
+                    historique_credits=row['historique_credits'],
+                    risque_personnel=row['risque_personnel'],
+                    score_credit=row['score_credit'],
+                    loyer_mensuel=row['loyer_mensuel'],
+                ),
+                contrats = [Contrat(
+                    montant_pret=row['montant_pret'],
+                )]
             )
-            clients_to_add.append(client_data)
+            clients_to_add.append(client)
 
         # Ajoute tous les nouveaux objets à la session en une seule fois (plus performant)
-        db.bulk_save_objects(clients_to_add)
+        db.add_all(clients_to_add)
 
         # Valide la transaction pour enregistrer les données de manière permanente
         db.commit()
