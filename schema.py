@@ -7,9 +7,7 @@ from typing import Dict, Any, Optional
 class GenericRequest(BaseModel):
     data: Dict[str, Any]
 
-# Ce schéma définit la structure JSON de sortie pour un client
 class Client(BaseModel):
-    id: int
     nom: str
     prenom: str
     age: int
@@ -34,3 +32,8 @@ class Client(BaseModel):
     # directement depuis un modèle ORM (comme votre modèle Client SQLAlchemy)
     class Config:
         from_attributes = True
+
+
+# Ce schéma définit la structure JSON de sortie pour un client
+class ClientRequest(Client):
+    id: int
