@@ -1,5 +1,5 @@
 import sys
-from fastapi import FastAPI, Depends, Path, Request
+from fastapi import FastAPI, Depends, Path, Request, requests
 from sqlalchemy.orm import Session
 from typing import List, Any
 from loguru import logger
@@ -40,54 +40,49 @@ async def log_requests(request: Request, call_next):
 
 # --- Routes de l'API avec logging ---
 
-@app.post("/{table_name}/", response_model=schema.ClientRequest, status_code=201, summary="Créer un enregistrement")
-def create_new_item(
-        table_name: str,
+@app.post("/clients/", response_model=schema.ClientRead, status_code=201, summary="Créer un enregistrement")
+def create_new_client(
         request: schema.Client,
         db: Session = Depends(get_db)
 ):
     """Crée un nouvel enregistrement dans la table spécifiée."""
-    logger.info(f"Tentative de création d'un enregistrement dans la table '{table_name}'")
-    return crud.create_item(db=db, tablename=table_name, data=request.__dict__)
+    logger.info(f"Tentative de création d'un enregistrement dans la table 'clients'")
+    return crud.create_client(db=db, data=request.__dict__)
 
-@app.get("/{table_name}/", response_model=List[schema.ClientRequest], summary="Lire plusieurs enregistrements")
-def read_all_items(
-        table_name: str,
+@app.get("/clients/", response_model=List[schema.ClientRead], summary="Lire plusieurs enregistrements")
+def read_all_clients(
         skip: int = 0,
         limit: int = 100,
         db: Session = Depends(get_db)
 ):
     """Lit une liste d'enregistrements depuis la table spécifiée avec pagination."""
-    logger.info(f"Lecture de la liste des enregistrements de la table '{table_name}' (skip={skip}, limit={limit})")
-    return crud.get_items(db=db, tablename=table_name, skip=skip, limit=limit)
+    logger.info(f"Lecture de la liste des enregistrements de la table 'clients' (skip={skip}, limit={limit})")
+    return crud.get_clients(db=db, skip=skip, limit=limit)
 
-@app.get("/{table_name}/{item_id}", response_model=schema.ClientRequest, summary="Lire un enregistrement par ID")
-def read_single_item(
-        table_name: str,
-        item_id: int,
+@app.get("/clients/{client_id}", response_model=schema.ClientRead, summary="Lire un enregistrement par ID")
+def read_single_client(
+        client_id: int,
         db: Session = Depends(get_db)
 ):
     """Lit un seul enregistrement par son ID dans la table spécifiée."""
-    logger.info(f"Lecture de l'enregistrement ID {item_id} de la table '{table_name}'")
-    return crud.get_item(db=db, tablename=table_name, item_id=item_id)
+    logger.info(f"Lecture de l'enregistrement ID {client_id} de la table 'clients'")
+    return crud.get_client(db=db, client_id=client_id)
 
-@app.put("/{table_name}/{item_id}", response_model=schema.ClientRequest, summary="Mettre à jour un enregistrement")
-def update_existing_item(
-        table_name: str,
-        item_id: int,
+@app.put("/clients/{client_id}", response_model=schema.ClientRead, summary="Mettre à jour un enregistrement")
+def update_existing_client(
+        client_id: int,
         request: schema.Client,
         db: Session = Depends(get_db)
 ):
     """Met à jour un enregistrement existant par son ID."""
-    logger.info(f"Tentative de mise à jour de l'enregistrement ID {item_id} dans la table '{table_name}'")
-    return crud.update_item(db=db, tablename=table_name, item_id=item_id, data=request.__dict__)
+    logger.info(f"Tentative de mise à jour de l'enregistrement ID {client_id} dans la table 'clients'")
+    return crud.update_client(db=db, client_id=client_id, data=request.__dict__)
 
-@app.delete("/{table_name}/{item_id}", summary="Supprimer un enregistrement")
-def delete_existing_item(
-        table_name: str,
-        item_id: int,
+@app.delete("/clients/{client_id}", summary="Supprimer un enregistrement")
+def delete_existing_client(
+        client_id: int,
         db: Session = Depends(get_db)
 ):
     """Supprime un enregistrement par son ID."""
-    logger.info(f"Tentative de suppression de l'enregistrement ID {item_id} de la table '{table_name}'")
-    return crud.delete_item(db=db, tablename=table_name, item_id=item_id)
+    logger.info(f"Tentative de suppression de l'enregistrement ID {client_id} de la table 'clients'")
+    return crud.delete_client(db=db, client_id=client_id)

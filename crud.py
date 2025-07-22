@@ -1,20 +1,11 @@
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from loguru import logger
-import models
+from models import Client
 
-
-def get_model_by_tablename(tablename: str):
-    """Retourne la classe du modèle SQLAlchemy basée sur le nom de la table."""
-    logger.debug(f"Recherche du modèle pour la table: {tablename}")
-    for mapper in models.Base.registry.mappers:
-        if mapper.class_.__tablename__ == tablename:
-            logger.debug(f"Modèle '{mapper.class_.__name__}' trouvé pour la table '{tablename}'")
-            return mapper.class_
-    logger.error(f"Aucun modèle trouvé pour la table '{tablename}'")
-    raise HTTPException(status_code=404, detail=f"Table '{tablename}' not found.")
 
 def _preprocess_data_for_client(data: dict):
     """
@@ -28,77 +19,69 @@ def _preprocess_data_for_client(data: dict):
             raise HTTPException(status_code=400, detail="Format de date invalide pour date_creation_compte. Utilisez AAAA-MM-JJ.")
     return data
 
-def create_item(db: Session, tablename: str, data: dict):
+def create_client(db: Session, data: dict):
     """Crée un enregistrement dans une table donnée."""
-    model = get_model_by_tablename(tablename)
-
-    # Prétraitement des données si la table est 'clients'
-    if tablename == 'clients':
-        data = _preprocess_data_for_client(data)
+    data = _preprocess_data_for_client(data)
 
     try:
-        db_item = model(**data)
-        db.add(db_item)
+        db_client = Client(**data)
+        db.add(db_client)
         db.commit()
-        db.refresh(db_item)
-        logger.success(f"Enregistrement créé avec succès dans '{tablename}' avec l'ID {db_item.id}")
-        return db_item
+        db.refresh(db_client)
+        logger.success(f"Enregistrement créé avec succès dans 'clients' avec l'ID {db_client.id}")
+        return db_client
     except Exception as e:
-        logger.error(f"Erreur lors de la création dans '{tablename}': {e}")
+        logger.error(f"Erreur lors de la création dans 'clients': {e}")
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Error creating item: {e}")
+        raise HTTPException(status_code=400, detail=f"Error creating client: {e}")
 
 
-def get_item(db: Session, tablename: str, item_id: int):
+def get_client(db: Session, client_id: int):
     """Récupère un enregistrement par son ID."""
-    model = get_model_by_tablename(tablename)
-    item = db.query(model).filter(model.id == item_id).first()
-    if item is None:
-        logger.warning(f"Enregistrement ID {item_id} non trouvé dans la table '{tablename}'")
-        raise HTTPException(status_code=404, detail="Item not found")
-    logger.info(f"Enregistrement ID {item_id} trouvé dans la table '{tablename}'")
-    return item
+    stmt = select(Client).where(Client.id == client_id)
+    client = db.scalar(stmt)
+    if client is None:
+        logger.warning(f"Enregistrement ID {client_id} non trouvé dans la table 'clients'")
+        raise HTTPException(status_code=404, detail="client not found")
+    logger.info(f"Enregistrement ID {client_id} trouvé dans la table 'clients'")
+    return client
 
-def get_items(db: Session, tablename: str, skip: int = 0, limit: int = 100):
+def get_clients(db: Session, skip: int = 0, limit: int = 100):
     """Récupère une liste d'enregistrements."""
-    model = get_model_by_tablename(tablename)
-    items = db.query(model).offset(skip).limit(limit).all()
-    logger.info(f"{len(items)} enregistrements récupérés de la table '{tablename}'")
-    return items
+    stmt = select(Client).offset(skip).limit(limit)
+    clients = db.scalars(stmt).all()
+    logger.info(f"{len(clients)} enregistrements récupérés de la table 'clients'")
+    return clients
 
-def update_item(db: Session, tablename: str, item_id: int, data: dict):
+def update_client(db: Session, client_id: int, data: dict):
     """Met à jour un enregistrement."""
-    model = get_model_by_tablename(tablename)
-    db_item = get_item(db, tablename, item_id) # Utilise la fonction get_item pour la vérification et le log
+    db_client = get_client(db, client_id) # Utilise la fonction get_client pour la vérification et le log
 
-    # Prétraitement des données si la table est 'clients'
-    if tablename == 'clients':
-        data = _preprocess_data_for_client(data)
+    data = _preprocess_data_for_client(data)
 
     try:
         for key, value in data.items():
-            setattr(db_item, key, value)
+            setattr(db_client, key, value)
 
         db.commit()
-        db.refresh(db_item)
-        logger.success(f"Enregistrement ID {item_id} mis à jour avec succès dans '{tablename}'")
-        return db_item
+        db.refresh(db_client)
+        logger.success(f"Enregistrement ID {client_id} mis à jour avec succès dans 'clients'")
+        return db_client
     except Exception as e:
-        logger.error(f"Erreur lors de la mise à jour de l'ID {item_id} dans '{tablename}': {e}")
+        logger.error(f"Erreur lors de la mise à jour de l'ID {client_id} dans 'clients': {e}")
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Error updating item: {e}")
+        raise HTTPException(status_code=400, detail=f"Error updating client: {e}")
 
-def delete_item(db: Session, tablename: str, item_id: int):
+def delete_client(db: Session, client_id: int):
     """Supprime un enregistrement."""
-    model = get_model_by_tablename(tablename)
-    db_item = get_item(db, tablename, item_id) # Utilise la fonction get_item pour la vérification et le log
+    db_client = get_client(db, client_id) # Utilise la fonction get_client pour la vérification et le log
 
     try:
-        db.delete(db_item)
+        db.delete(db_client)
         db.commit()
-        logger.success(f"Enregistrement ID {item_id} supprimé avec succès de la table '{tablename}'")
-        return {"detail": "Item deleted successfully"}
+        logger.success(f"Enregistrement ID {client_id} supprimé avec succès de la table 'clients'")
+        return {"detail": "client deleted successfully"}
     except Exception as e:
-        logger.error(f"Erreur lors de la suppression de l'ID {item_id} dans '{tablename}': {e}")
+        logger.error(f"Erreur lors de la suppression de l'ID {client_id} dans 'clients': {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error deleting item: {e}")
+        raise HTTPException(status_code=500, detail=f"Error deleting client: {e}")
