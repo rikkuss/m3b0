@@ -1,12 +1,12 @@
-# API CRUD Générique avec FastAPI
+# API CRUD Clients avec FastAPI
 
-Ce projet est une API RESTful puissante et générique construite avec **FastAPI** et **SQLAlchemy**. Elle est conçue pour effectuer des opérations CRUD (Create, Read, Update, Delete) sur n'importe quelle table d'une base de données SQLite, en spécifiant simplement le nom de la table dans l'URL.
+Ce projet est une API RESTful puissante construite avec **FastAPI** et **SQLAlchemy**. Elle est conçue pour effectuer des opérations CRUD (Create, Read, Update, Delete) sur la table clients d'une base de données SQLite.
 
 ---
 
 ## ✨ Fonctionnalités
 
-* **CRUD Générique** : Effectuez les quatre opérations de base sur n'importe quelle table sans écrire de code spécifique à cette table.
+* **CRUD** : Effectuez les quatre opérations de base sur clients.
 * **Base de Données** : Utilise **SQLite** pour la simplicité et la portabilité, géré par l'ORM **SQLAlchemy**.
 * **Validation des Données** : La validation robuste des requêtes et la sérialisation des réponses sont assurées par **Pydantic**.
 * **Journalisation Avancée** : Les requêtes, les erreurs et les événements importants sont journalisés via **Loguru** dans la console et dans des fichiers rotatifs.
@@ -24,6 +24,7 @@ Ce projet est une API RESTful puissante et générique construite avec **FastAPI
 |-- models.py            # Définition des modèles de table SQLAlchemy (ORM)
 |-- schemas.py           # Définition des schémas Pydantic pour la validation des données
 |-- populate_db.py       # Script pour remplir la base de données depuis un CSV
+|-- enumClasses.py       # Classes enum 
 |-- requirements.txt     # Dépendances Python du projet
 |-- dataset.csv          # Fichier de données CSV
 |-- logs/                # Répertoire pour les fichiers de logs
@@ -83,9 +84,9 @@ L'API est conçue pour être simple et intuitive. Une fois le serveur lancé, vo
 
 ### Endpoints Disponibles
 
-Les endpoints fonctionnent en remplaçant `{table_name}` par le nom de la table que vous souhaitez interroger (ex: `clients`).
+Les endpoints fonctionnent en interrogeant `clients`.
 
-#### `POST /{table_name}/`
+#### `POST /clients/`
 
 Crée un nouvel enregistrement dans la table spécifiée.
 
@@ -93,39 +94,49 @@ Crée un nouvel enregistrement dans la table spécifiée.
 
 ```json
 {
-  "data": {
-    "nom": "Durand",
-    "prenom": "Alice",
-    "age": 34,
-    "taille": 165.5,
-    "poids": 60.2,
-    "sexe": "F",
+  "nom": "Durand",
+  "prenom": "Alice",
+  "client_meta": {
+    "age": 63,
+    "taille": 165,
+    "poids": 56.9,
+    "sexe": "Femme",
     "sport_licence": true,
-    "niveau_etude": "master",
-    "region": "Nouvelle-Aquitaine",
-    "smoker": false,
+    "niveau_etude": "aucun",
+    "region": "Hauts-de-France",
+    "smoker": true,
     "nationalite_francaise": true,
-    "revenu_estime_mois": 3500,
-    "risque_personnel": 0.3,
-    "montant_pret": 15000,
-    "date_creation_compte": "2025-07-22"
-  }
+    "situation_familiale": "veuf(ve)"
+  },
+  "client_situation": {
+    "revenu_estime_mois": 1820,
+    "historique_credits": null,
+    "risque_personnel": 0.43,
+    "score_credit": 404,
+    "loyer_mensuel": null
+  },
+  "contrats": [
+    {
+      "montant_pret": 15000
+    }
+  ],
+  "date_creation_compte": "2025-07-22"
 }
 ```
 
-#### `GET /{table_name}/`
+#### `GET /clients/`
 
 Récupère une liste paginée de tous les enregistrements de la table.
 
 * **Exemple** : `GET /clients/?skip=0&limit=10`
 
-#### `GET /{table_name}/{item_id}`
+#### `GET /clients/{client_id}`
 
 Récupère un enregistrement unique par son `id`.
 
 * **Exemple** : `GET /clients/1`
 
-#### `PUT /{table_name}/{item_id}`
+#### `PUT /clients/{client_id}`
 
 Met à jour un ou plusieurs champs d'un enregistrement existant.
 
@@ -133,14 +144,16 @@ Met à jour un ou plusieurs champs d'un enregistrement existant.
 
 ```json
 {
-  "data": {
-    "revenu_estime_mois": 3800,
+  "client_meta": {
     "smoker": true
+  },
+  "client_situation": {
+    "revenu_estime_mois": 3800
   }
 }
 ```
 
-#### `DELETE /{table_name}/{item_id}`
+#### `DELETE /clients/{client_id}`
 
 Supprime un enregistrement par son `id`.
 
